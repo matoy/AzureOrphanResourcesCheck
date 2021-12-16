@@ -86,11 +86,11 @@ Try {
 	# nics
 	$uri = "https://management.azure.com/subscriptions/$subscriptionid/providers/Microsoft.Network/networkInterfaces?api-version=2021-05-01"
 	$results = Invoke-RestMethod -Method Get -Uri $uri -Headers $headers
-	$nics = $results.value | where {$_.properties.VirtualMachine.Count -eq 0 -and $_.properties.IpConfigurations.PrivateLinkConnectionProperties.Count -eq 0 -and $exclusionsTab -notcontains $_.Name}
+	$nics = $results.value | where {$_.properties.VirtualMachine.Count -eq 0 -and (-not $_.properties.privateEndpoint) -and $exclusionsTab -notcontains $_.Name}
 	while ($results.nextLink) {
 		$uri = $results.nextLink
 		$results = Invoke-RestMethod -Method Get -Uri $uri -Headers $headers
-		$nics += $results.value | where {$_.properties.VirtualMachine.Count -eq 0 -and $_.properties.IpConfigurations.PrivateLinkConnectionProperties.Count -eq 0 -and $exclusionsTab -notcontains $_.Name}
+		$nics += $results.value | where {$_.properties.VirtualMachine.Count -eq 0 -and (-not $_.properties.privateEndpoint) -and $exclusionsTab -notcontains $_.Name}
 	}
 	foreach ($nic in $nics) {
 		$currentItem = [pscustomobject]@{
@@ -105,11 +105,11 @@ Try {
 	# nsgs
 	$uri = "https://management.azure.com/subscriptions/$subscriptionid/providers/Microsoft.Network/networkSecurityGroups?api-version=2021-05-01"
 	$results = Invoke-RestMethod -Method Get -Uri $uri -Headers $headers
-	$nsgs = $results.value | where {$_.properties.subnets.Count -eq 0 -and $_.properties.subnets.NetworkInterface.Count -eq 0 -and $exclusionsTab -notcontains $_.Name}
+	$nsgs = $results.value | where {$_.properties.subnets.Count -eq 0 -and $_.properties.subnets.NetworkInterface.Count -eq 0 -and $_.properties.networkInterfaces.Count -eq 0 -and $exclusionsTab -notcontains $_.Name}
 	while ($results.nextLink) {
 		$uri = $results.nextLink
 		$results = Invoke-RestMethod -Method Get -Uri $uri -Headers $headers
-		$nsgs += $results.value | where {$_.properties.subnets.Count -eq 0 -and $_.properties.subnets.NetworkInterface.Count -eq 0 -and $exclusionsTab -notcontains $_.Name}
+		$nsgs += $results.value | where {$_.properties.subnets.Count -eq 0 -and $_.properties.subnets.NetworkInterface.Count -eq 0 -and $_.properties.networkInterfaces.Count -eq 0 -and $exclusionsTab -notcontains $_.Name}
 	}
 	foreach ($nsg in $nsgs) {
 		$currentItem = [pscustomobject]@{
