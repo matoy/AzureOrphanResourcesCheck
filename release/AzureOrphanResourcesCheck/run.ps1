@@ -178,21 +178,32 @@ Try {
 		$orphanResults += $currentItem
 	}
 
-	# VM Hybrid Use Benefit
+	# VM Hybrid Use Benefit & finopsstartstop tag
 	# ref: https://www.isjw.uk/post/azure/check-azure-hybrid-benefits-with-powershell/
 	$uri = "https://management.azure.com/subscriptions/$subscriptionid/providers/Microsoft.Compute/virtualMachines?api-version=2021-07-01"
 	$results = Invoke-RestMethod -Method Get -Uri $uri -Headers $headers
 	$vms = $results.value | where {$_.properties.osProfile.windowsConfiguration -and (-not $_.properties.licenseType) -and $exclusionsTab -notcontains $_.Name}
+	$vmsNoFinopsTag = $results.value | where {!$_.tags.finopsstartstop -and $exclusionsTab -notcontains $_.Name}
 	while ($results.nextLink) {
 		$uri = $results.nextLink
 		$results = Invoke-RestMethod -Method Get -Uri $uri -Headers $headers
 		$vms += $results.value | where {$_.properties.osProfile.windowsConfiguration -and (-not $_.properties.licenseType) -and $exclusionsTab -notcontains $_.Name}
+		$vmsNoFinopsTag += $results.value | where {!$_.tags.finopsstartstop -and $exclusionsTab -notcontains $_.Name}
 	}
 	foreach ($vm in $vms) {
 		$currentItem = [pscustomobject]@{
 			ResourceGroup = $vm.id.Split("/")[4]
 			AppOwnerTag = $vm.tags.appOwner
 			ResourceType  = "VmHybridBenefits"
+			ResourceName  = $vm.Name
+		}
+		$orphanResults += $currentItem
+	}
+	foreach ($vm in $vmsNoFinopsTag) {
+		$currentItem = [pscustomobject]@{
+			ResourceGroup = $vm.id.Split("/")[4]
+			AppOwnerTag = $vm.tags.appOwner
+			ResourceType  = "No finopsstartstop tag"
 			ResourceName  = $vm.Name
 		}
 		$orphanResults += $currentItem
