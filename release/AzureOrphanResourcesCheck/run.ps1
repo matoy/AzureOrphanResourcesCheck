@@ -183,16 +183,27 @@ Try {
 	$uri = "https://management.azure.com/subscriptions/$subscriptionid/providers/Microsoft.Compute/virtualMachines?api-version=2021-07-01"
 	$results = Invoke-RestMethod -Method Get -Uri $uri -Headers $headers
 	$vms = $results.value | where {$_.properties.osProfile.windowsConfiguration -and (-not $_.properties.licenseType) -and $exclusionsTab -notcontains $_.Name}
+	$vmsNoFinopsTag = $results.value | where {$_.tags.finopsstartstop}
 	while ($results.nextLink) {
 		$uri = $results.nextLink
 		$results = Invoke-RestMethod -Method Get -Uri $uri -Headers $headers
 		$vms += $results.value | where {$_.properties.osProfile.windowsConfiguration -and (-not $_.properties.licenseType) -and $exclusionsTab -notcontains $_.Name}
+		$vmsNoFinopsTag += $results.value | where {$_.tags.finopsstartstop}
 	}
 	foreach ($vm in $vms) {
 		$currentItem = [pscustomobject]@{
 			ResourceGroup = $vm.id.Split("/")[4]
 			AppOwnerTag = $vm.tags.appOwner
 			ResourceType  = "VmHybridBenefits"
+			ResourceName  = $vm.Name
+		}
+		$orphanResults += $currentItem
+	}
+	foreach ($vm in $vmsNoFinopsTag) {
+		$currentItem = [pscustomobject]@{
+			ResourceGroup = $vm.id.Split("/")[4]
+			AppOwnerTag = $vm.tags.appOwner
+			ResourceType  = "No finopsstartstop tag"
 			ResourceName  = $vm.Name
 		}
 		$orphanResults += $currentItem
