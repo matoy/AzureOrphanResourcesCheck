@@ -183,12 +183,12 @@ Try {
 	$uri = "https://management.azure.com/subscriptions/$subscriptionid/providers/Microsoft.Compute/virtualMachines?api-version=2021-07-01"
 	$results = Invoke-RestMethod -Method Get -Uri $uri -Headers $headers
 	$vms = $results.value | where {$_.properties.osProfile.windowsConfiguration -and (-not $_.properties.licenseType) -and $exclusionsTab -notcontains $_.Name}
-	$vmsNoFinopsTag = $results.value | where {!$_.tags.finopsstartstop}
+	$vmsNoFinopsTag = results.value | where {!$_.tags.finopsstartstop -and $exclusionsTab -notcontains $_.Name}
 	while ($results.nextLink) {
 		$uri = $results.nextLink
 		$results = Invoke-RestMethod -Method Get -Uri $uri -Headers $headers
 		$vms += $results.value | where {$_.properties.osProfile.windowsConfiguration -and (-not $_.properties.licenseType) -and $exclusionsTab -notcontains $_.Name}
-		$vmsNoFinopsTag += $results.value | where {!$_.tags.finopsstartstop}
+		$vmsNoFinopsTag += $results.value | where {!$_.tags.finopsstartstop -and $exclusionsTab -notcontains $_.Name}
 	}
 	foreach ($vm in $vms) {
 		$currentItem = [pscustomobject]@{
