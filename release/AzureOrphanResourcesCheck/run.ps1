@@ -227,6 +227,35 @@ Try {
 		}
 		$orphanResults += $currentItem
 	}
+	
+	# SQL database Hybrid Use Benefit
+	$uri = "https://management.azure.com/subscriptions/$subscriptionid/providers/Microsoft.Sql/servers?api-version=2021-02-01-preview"
+	$results = Invoke-RestMethod -Method Get -Uri $uri -Headers $headers
+	$sqlservers = $results.value
+	while ($results.nextLink) {
+		$uri = $results.nextLink
+		$results = Invoke-RestMethod -Method Get -Uri $uri -Headers $headers
+		$sqlvms += $results.value
+	}
+	foreach ($sqlserver in $sqlservers) {
+		$uri = "https://management.azure.com/subscriptions/$subscriptionid/resourceGroups/$($sqlserver.id.Split("/")[4])/providers/Microsoft.Sql/servers/$($sqlserver.name)/databases?api-version=2021-08-01-preview"
+		$results = Invoke-RestMethod -Method Get -Uri $uri -Headers $headers
+		$sqldatabases = $results.value | where {$_.properties.licenseType -eq "LicenseIncluded" -and $exclusionsTab -notcontains $_.Name}
+		while ($results.nextLink) {
+			$uri = $results.nextLink
+			$results = Invoke-RestMethod -Method Get -Uri $uri -Headers $headers
+			$sqldatabases += $results.value | where {$_.properties.licenseType -eq "LicenseIncluded" -and $exclusionsTab -notcontains $_.Name}
+		}
+	}
+	foreach ($sqldatabase in $sqldatabases) {
+		$currentItem = [pscustomobject]@{
+			ResourceGroup = $sqldatabase.id.Split("/")[4]
+			AppOwnerTag = $sqldatabase.tags.appOwner
+			ResourceType  = "SqlDatabaseHybridBenefits"
+			ResourceName  = $sqldatabase.Name
+		}
+		$orphanResults += $currentItem
+	}
 }
 Catch {
     if($_.ErrorDetails.Message) {
