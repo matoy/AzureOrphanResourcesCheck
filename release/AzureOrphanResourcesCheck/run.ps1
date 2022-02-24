@@ -240,11 +240,11 @@ Try {
 	foreach ($sqlserver in $sqlservers) {
 		$uri = "https://management.azure.com/subscriptions/$subscriptionid/resourceGroups/$($sqlserver.id.Split("/")[4])/providers/Microsoft.Sql/servers/$($sqlserver.name)/databases?api-version=2021-08-01-preview"
 		$results = Invoke-RestMethod -Method Get -Uri $uri -Headers $headers
-		$sqldatabases = $results.value | where {$_.properties.licenseType -eq "LicenseIncluded" -and $exclusionsTab -notcontains $_.Name}
+		$sqldatabases = $results.value | where {$_.properties.currentSku.name -ne "ElasticPool" -and $_.properties.licenseType -eq "LicenseIncluded" -and $exclusionsTab -notcontains $_.Name}
 		while ($results.nextLink) {
 			$uri = $results.nextLink
 			$results = Invoke-RestMethod -Method Get -Uri $uri -Headers $headers
-			$sqldatabases += $results.value | where {$_.properties.licenseType -eq "LicenseIncluded" -and $exclusionsTab -notcontains $_.Name}
+			$sqldatabases += $results.value | where {$_.properties.currentSku.name -ne "ElasticPool" -and $_.properties.licenseType -eq "LicenseIncluded" -and $exclusionsTab -notcontains $_.Name}
 		}
 		$uri = "https://management.azure.com/subscriptions/$subscriptionid/resourceGroups/$($sqlserver.id.Split("/")[4])/providers/Microsoft.Sql/servers/$($sqlserver.name)/elasticPools?api-version=2021-02-01-preview"
 		$results = Invoke-RestMethod -Method Get -Uri $uri -Headers $headers
