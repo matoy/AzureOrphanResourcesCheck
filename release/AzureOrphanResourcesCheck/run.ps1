@@ -228,7 +228,7 @@ Try {
 		$orphanResults += $currentItem
 	}
 	
-	# SQL database Hybrid Use Benefit
+	# SQL database / elastic pool Hybrid Use Benefit
 	$uri = "https://management.azure.com/subscriptions/$subscriptionid/providers/Microsoft.Sql/servers?api-version=2021-02-01-preview"
 	$results = Invoke-RestMethod -Method Get -Uri $uri -Headers $headers
 	$sqlservers = $results.value
@@ -246,6 +246,14 @@ Try {
 			$results = Invoke-RestMethod -Method Get -Uri $uri -Headers $headers
 			$sqldatabases += $results.value | where {$_.properties.licenseType -eq "LicenseIncluded" -and $exclusionsTab -notcontains $_.Name}
 		}
+		$uri = "https://management.azure.com/subscriptions/$subscriptionid/resourceGroups/$($sqlserver.id.Split("/")[4])/providers/Microsoft.Sql/servers/$($sqlserver.name)/elasticPools?api-version=2021-02-01-preview"
+		$results = Invoke-RestMethod -Method Get -Uri $uri -Headers $headers
+		$sqlpools = $results.value | where {$_.properties.licenseType -eq "LicenseIncluded" -and $exclusionsTab -notcontains $_.Name}
+		while ($results.nextLink) {
+			$uri = $results.nextLink
+			$results = Invoke-RestMethod -Method Get -Uri $uri -Headers $headers | where {$_.properties.licenseType -eq "LicenseIncluded" -and $exclusionsTab -notcontains $_.Name}
+			$sqlpools += $results.value
+		}
 	}
 	foreach ($sqldatabase in $sqldatabases) {
 		$currentItem = [pscustomobject]@{
@@ -253,6 +261,15 @@ Try {
 			AppOwnerTag = $sqldatabase.tags.appOwner
 			ResourceType  = "SqlDatabaseHybridBenefits"
 			ResourceName  = $sqldatabase.Name
+		}
+		$orphanResults += $currentItem
+	}
+	foreach ($sqlpool in $sqlpools) {
+		$currentItem = [pscustomobject]@{
+			ResourceGroup = $sqlpool.id.Split("/")[4]
+			AppOwnerTag = $sqlpool.tags.appOwner
+			ResourceType  = "SqlElasticPoolHybridBenefits"
+			ResourceName  = $sqlpool.Name
 		}
 		$orphanResults += $currentItem
 	}
