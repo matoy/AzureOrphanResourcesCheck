@@ -212,11 +212,11 @@ Try {
 	# SQL VM Hybrid Use Benefit
 	$uri = "https://management.azure.com/subscriptions/$subscriptionid/providers/Microsoft.SqlVirtualMachine/sqlVirtualMachines?api-version=2017-03-01-preview"
 	$results = Invoke-RestMethod -Method Get -Uri $uri -Headers $headers
-	$sqlvms = $results.value | where {$_.properties.sqlServerLicenseType -ne "AHUB" -and $exclusionsTab -notcontains $_.Name}
+	$sqlvms = $results.value | where {$_.properties.sqlServerLicenseType -ne "AHUB" -and $_.properties.sqlImageSku -ne "Express" -and $exclusionsTab -notcontains $_.Name}
 	while ($results.nextLink) {
 		$uri = $results.nextLink
 		$results = Invoke-RestMethod -Method Get -Uri $uri -Headers $headers
-		$sqlvms += $results.value | where {$_.properties.sqlServerLicenseType -ne "AHUB" -and $exclusionsTab -notcontains $_.Name}
+		$sqlvms += $results.value | where {$_.properties.sqlServerLicenseType -ne "AHUB" -and $_.properties.sqlImageSku -ne "Express" -and $exclusionsTab -notcontains $_.Name}
 	}
 	foreach ($sqlvm in $sqlvms) {
 		$currentItem = [pscustomobject]@{
