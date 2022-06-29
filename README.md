@@ -77,7 +77,10 @@ Calling the function once a day should be enough.
   
 You have make 1 function call per subscription by specifying the subscriptionid in the GET parameters: &subscriptionid=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx  
   
-You can also specify comma separated resource names to exclude with &exclusions=vm1,snapshotXXX,nic-abcdef  
+You can specify comma separated resource names to exclude with &exclusions=vm1,snapshotXXX,nic-abcdef  
+  
+You can also specify comma separated check types to exclude with &exclusiontypes=XXX  
+XXX can be: disks, nics, nsgs, pubips, routes, snapshots, vmhub, finopstag, sqlvmhub, sqlhub.
   
 Be sure to have an appropriate timeout (30s or more) because if you have many resources, the function might need some time to execute.  
   
